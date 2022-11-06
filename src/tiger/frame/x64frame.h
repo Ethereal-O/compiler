@@ -10,6 +10,7 @@
 namespace frame {
 class X64RegManager : public RegManager {
   /* TODO: Put your lab5 code here */
+public:
   X64RegManager() {
     // create register
     temp::Temp *rax = temp::TempFactory::NewTemp();
