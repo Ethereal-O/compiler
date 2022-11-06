@@ -19,18 +19,20 @@ class Level;
 class PatchList {
 public:
   void DoPatch(temp::Label *label) {
-    for(auto &patch : patch_list_) *patch = label;
+    for (auto &patch : patch_list_)
+      *patch = label;
   }
 
   static PatchList JoinPatch(const PatchList &first, const PatchList &second) {
     PatchList ret(first.GetList());
-    for(auto &patch : second.patch_list_) {
+    for (auto &patch : second.patch_list_) {
       ret.patch_list_.push_back(patch);
     }
     return ret;
   }
 
-  explicit PatchList(std::list<temp::Label **> patch_list) : patch_list_(patch_list) {}
+  explicit PatchList(std::list<temp::Label **> patch_list)
+      : patch_list_(patch_list) {}
   PatchList() = default;
 
   [[nodiscard]] const std::list<temp::Label **> &GetList() const {
@@ -57,11 +59,34 @@ public:
   Level *parent_;
 
   /* TODO: Put your lab5 code here */
+  static std::list<Access *> *Formals(Level *level) {
+    auto formals_ = new std::list<Access *>();
+    for (auto f_access : level->frame_->formals_)
+      formals_->push_back(new Access(level, f_access));
+    return formals_;
+  }
+
+  static tr::Level *NewLevel(tr::Level *parent, temp::Label *name,
+                             std::list<bool> formals) {
+    tr::Level *level = new Level();
+    level->parent_ = parent;
+    formals.push_front(true);
+    level->frame_ = frame::Frame::NewFrame(name, formals);
+    return level;
+  }
 };
 
 class ProgTr {
 public:
   // TODO: Put your lab5 code here */
+  ProgTr() = delete;
+  explicit ProgTr(std::unique_ptr<absyn::AbsynTree> absyn_tree,
+                  std::unique_ptr<err::ErrorMsg> errormsg)
+      : absyn_tree_(std::move(absyn_tree)), errormsg_(std::move(errormsg)),
+        main_level_(std::make_unique<Level>(
+            tr::Level::NewLevel(nullptr, temp::LabelFactory::NewLabel(), {}))),
+        tenv_(std::make_unique<env::TEnv>()),
+        venv_(std::make_unique<env::VEnv>()) {}
 
   /**
    * Translate IR tree
@@ -75,7 +100,6 @@ public:
   std::unique_ptr<err::ErrorMsg> TransferErrormsg() {
     return std::move(errormsg_);
   }
-
 
 private:
   std::unique_ptr<absyn::AbsynTree> absyn_tree_;
