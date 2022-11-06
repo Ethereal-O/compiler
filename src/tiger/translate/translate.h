@@ -83,8 +83,8 @@ public:
   explicit ProgTr(std::unique_ptr<absyn::AbsynTree> absyn_tree,
                   std::unique_ptr<err::ErrorMsg> errormsg)
       : absyn_tree_(std::move(absyn_tree)), errormsg_(std::move(errormsg)),
-        main_level_(std::make_unique<Level>(
-            tr::Level::NewLevel(nullptr, temp::LabelFactory::NewLabel(), {}))),
+        main_level_(
+            tr::Level::NewLevel(nullptr, temp::LabelFactory::NewLabel(), {})),
         tenv_(std::make_unique<env::TEnv>()),
         venv_(std::make_unique<env::VEnv>()) {}
 
