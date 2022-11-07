@@ -29,28 +29,32 @@ public:
 
 class X64Frame : public Frame {
   /* TODO: Put your lab5 code here */
+private:
+  uint32_t in_reg_num_;
+
 public:
   explicit X64Frame(temp::Label *name, std::list<bool> formals) {
-    const uint32_t wordSize = 8;
-    const uint32_t maxInRegNum = 6;
     name_ = name;
-    uint32_t offset = wordSize;
+    size_ = reg_manager->WordSize();
+    in_reg_num_ = 0;
 
-    formals_.push_back(new InFrameAccess(offset));
-    offset += wordSize;
+    for (auto formal : formals)
+      allocLocal(formal);
+  }
 
-    uint32_t inRegNum = 0;
-    for (auto formal : formals) {
-      if (formal) {
-        assert(inRegNum < maxInRegNum);
-        formals_.push_back(new InRegAccess(temp::TempFactory::NewTemp()));
-      } else {
-        size += wordSize;
-        Access *access = new InFrameAccess(-size);
-        formals_.push_back(access);
-        locals_.push_back(access);
-      }
+  Access *allocLocal(bool escape) {
+    static const uint32_t max_in_reg_num =
+        reg_manager->ArgRegs()->GetList().size();
+    Access *access;
+    if (escape || in_reg_num_ >= max_in_reg_num) {
+      access = new InFrameAccess(-size_);
+      size_ += reg_manager->WordSize();
+    } else {
+      access = new InRegAccess(temp::TempFactory::NewTemp());
+      in_reg_num_++;
     }
+    formals_.push_back(access);
+    return access;
   }
 };
 /* TODO: Put your lab5 code here */
@@ -59,18 +63,9 @@ frame::Frame *Frame::NewFrame(temp::Label *name, std::list<bool> formals) {
   return new X64Frame(name, formals);
 }
 
-Access *Frame::AllocLocal(bool escape) {
-  const uint32_t wordSize = 8;
-  Access *access;
-  if (escape) {
-    size += wordSize;
-    access = new InFrameAccess(-size);
-    formals_.push_back(access);
-    locals_.push_back(access);
-  } else {
-    access = new InRegAccess(temp::TempFactory::NewTemp());
-  }
-  return access;
+tree::Exp *ExternalCall(std::string s, tree::ExpList *args) {
+  return new tree::CallExp(new tree::NameExp(temp::LabelFactory::NamedLabel(s)),
+                           args);
 }
 
 } // namespace frame

@@ -59,10 +59,10 @@ public:
   Level *parent_;
 
   /* TODO: Put your lab5 code here */
-  static std::list<Access *> *Formals(Level *level) {
+  std::list<Access *> *getFormals() {
     auto formals_ = new std::list<Access *>();
-    for (auto f_access : level->frame_->formals_)
-      formals_->push_back(new Access(level, f_access));
+    for (auto f_access : this->frame_->formals_)
+      formals_->push_back(new Access(this, f_access));
     return formals_;
   }
 
@@ -79,12 +79,13 @@ public:
 class ProgTr {
 public:
   // TODO: Put your lab5 code here */
+#define MAIN_LABEL_NAME "tigermain"
   ProgTr() = delete;
   explicit ProgTr(std::unique_ptr<absyn::AbsynTree> absyn_tree,
                   std::unique_ptr<err::ErrorMsg> errormsg)
       : absyn_tree_(std::move(absyn_tree)), errormsg_(std::move(errormsg)),
-        main_level_(
-            tr::Level::NewLevel(nullptr, temp::LabelFactory::NewLabel(), {})),
+        main_level_(tr::Level::NewLevel(
+            nullptr, temp::LabelFactory::NamedLabel(MAIN_LABEL_NAME), {})),
         tenv_(std::make_unique<env::TEnv>()),
         venv_(std::make_unique<env::VEnv>()) {}
 

@@ -80,11 +80,11 @@ class Frame {
 public:
   temp::Label *name_;
   std::list<frame::Access *> formals_;
-  std::list<frame::Access *> locals_;
-  uint32_t size;
+  std::list<tree::Stm *> view_shift;
+  uint32_t size_;
 
+  virtual Access *allocLocal(bool escape) = 0;
   static frame::Frame *NewFrame(temp::Label *name, std::list<bool> formals);
-  Access *AllocLocal(bool escape);
 };
 
 /**
@@ -124,6 +124,7 @@ private:
 };
 
 /* TODO: Put your lab5 code here */
+tree::Exp *ExternalCall(std::string s, tree::ExpList *args);
 
 } // namespace frame
 
