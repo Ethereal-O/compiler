@@ -80,7 +80,6 @@ class Frame {
 public:
   temp::Label *name_;
   std::list<frame::Access *> formals_;
-  std::list<tree::Stm *> view_shift;
   uint32_t size_;
 
   virtual Access *allocLocal(bool escape) = 0;

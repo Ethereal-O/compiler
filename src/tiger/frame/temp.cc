@@ -81,4 +81,11 @@ void Map::DumpMap(FILE *out) {
   }
 }
 
+Temp *TempList::NthTemp(int i) const {
+  for (auto it : temp_list_)
+    if (i-- == 0)
+      return it;
+  assert(0);
+}
+
 } // namespace temp

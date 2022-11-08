@@ -29,31 +29,27 @@ public:
 
 class X64Frame : public Frame {
   /* TODO: Put your lab5 code here */
-private:
-  uint32_t in_reg_num_;
 
 public:
   explicit X64Frame(temp::Label *name, std::list<bool> formals) {
     name_ = name;
     size_ = reg_manager->WordSize();
-    in_reg_num_ = 0;
 
     for (auto formal : formals)
-      allocLocal(formal);
+      formals_.push_back(allocLocal(formal));
+
+    static const uint32_t max_in_reg_num =
+        reg_manager->ArgRegs()->GetList().size();
   }
 
   Access *allocLocal(bool escape) {
-    static const uint32_t max_in_reg_num =
-        reg_manager->ArgRegs()->GetList().size();
     Access *access;
-    if (escape || in_reg_num_ >= max_in_reg_num) {
+    if (escape) {
       access = new InFrameAccess(-size_);
       size_ += reg_manager->WordSize();
     } else {
       access = new InRegAccess(temp::TempFactory::NewTemp());
-      in_reg_num_++;
     }
-    formals_.push_back(access);
     return access;
   }
 };
