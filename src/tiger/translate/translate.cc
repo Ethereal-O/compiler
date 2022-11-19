@@ -298,14 +298,15 @@ tr::ExpAndTy *CallExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                  err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
   env::FunEntry *fun_entry = static_cast<env::FunEntry *>(venv->Look(func_));
+
   tree::ExpList *args_ExpList = new tree::ExpList();
   for (auto arg : args_->GetList())
     args_ExpList->Append(
         arg->Translate(venv, tenv, level, label, errormsg)->exp_->UnEx());
 
   tree::Exp *call_Exp;
-  if (!fun_entry->level_) {
-    call_Exp = frame::ExternalCall(fun_entry->label_->Name(), args_ExpList);
+  if (!fun_entry->label_) {
+    call_Exp = frame::ExternalCall(func_->Name(), args_ExpList);
   } else {
     args_ExpList->Insert(tr::GetStaticLink(level, fun_entry->level_->parent_));
     call_Exp =
