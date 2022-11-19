@@ -64,4 +64,17 @@ tree::Exp *ExternalCall(std::string s, tree::ExpList *args) {
                            args);
 }
 
+assem::InstrList *ProcEntryExit2(assem::InstrList *body) {
+  body->Append(new assem::OperInstr("", new temp::TempList(),
+                                    reg_manager->ReturnSink(), nullptr));
+  return body;
+}
+
+assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList *body) {
+  char buf[100];
+  sprintf(buf, "PROCEDURE %s\n",
+          temp::LabelFactory::LabelString(frame->name_).data());
+  return new assem::Proc(std::string(buf), body, "END\n");
+}
+
 } // namespace frame

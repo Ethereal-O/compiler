@@ -60,8 +60,10 @@ public:
   }
 
   temp::TempList *ReturnSink() {
-    temp::TempList *tempList = new temp::TempList({regs_[0]});
-    return tempList;
+    temp::TempList *temp_list = CalleeSaves();
+    temp_list->Append(StackPointer());
+    temp_list->Append(ReturnValue());
+    return temp_list;
   }
 
   int WordSize() { return 8; }
@@ -71,6 +73,10 @@ public:
   temp::Temp *StackPointer() { return regs_[7]; }
 
   temp::Temp *ReturnValue() { return regs_[0]; }
+
+  temp::Temp *Rax() { return regs_[0]; }
+
+  temp::Temp *Rdx() { return regs_[3]; }
 };
 
 } // namespace frame

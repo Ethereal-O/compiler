@@ -126,12 +126,6 @@ public:
   }
 };
 
-// *********************************************************************************
-// TODO:
-// IMPORTANT:
-// there will be an additional function in temp.cc, delete it when start PART2
-// *********************************************************************************
-
 tree::Exp *GetStaticLink(Level *current, Level *target) {
   tree::Exp *frame_ptr = new tree::TempExp(reg_manager->FramePointer());
   while (current != target) {

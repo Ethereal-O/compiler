@@ -61,7 +61,7 @@ type::Ty *SubscriptVar::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
     errormsg->Error(subscript_->pos_, "integer required");
     return type::IntTy::Instance();
   }
-  return var_ty;
+  return ((type::ArrayTy *)var_ty)->ty_;
 }
 
 type::Ty *VarExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
@@ -187,7 +187,6 @@ type::Ty *RecordExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
       return type::IntTy::Instance();
     }
   }
-  printf("%s\n", typeid(type_ty->ActualTy()).name());
   return type_ty->ActualTy();
 }
 
@@ -213,8 +212,14 @@ type::Ty *AssignExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   if (!(var_ty && exp_ty && var_ty->IsSameType(exp_ty))) {
     errormsg->Error(pos_, "unmatched assign exp");
   }
-  if (labelcount > 0) {
-    errormsg->Error(pos_, "loop variable can't be assigned");
+  if (typeid(*var_) == typeid(SimpleVar)) {
+    env::EnvEntry *var_entry = venv->Look(static_cast<SimpleVar *>(var_)->sym_);
+    if (typeid(*var_entry) != typeid(env::VarEntry)) {
+      errormsg->Error(pos_, "not a variable");
+    }
+    if (static_cast<env::VarEntry *>(var_entry)->readonly_) {
+      errormsg->Error(pos_, "loop variable can't be assigned");
+    }
   }
   return type::VoidTy::Instance();
 }
@@ -230,20 +235,18 @@ type::Ty *IfExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   }
   type::Ty *then_ty =
       then_->SemAnalyze(venv, tenv, labelcount, errormsg)->ActualTy();
-  if (!then_ty->IsSameType(type::VoidTy::Instance())) {
-    errormsg->Error(pos_, "if-then exp's body must produce no value");
-  }
   if (elsee_) {
     type::Ty *elsee_ty =
         elsee_->SemAnalyze(venv, tenv, labelcount, errormsg)->ActualTy();
-    if (!elsee_ty->IsSameType(type::VoidTy::Instance())) {
-      errormsg->Error(pos_, "procedure returns value");
-    }
     if (!elsee_ty->IsSameType(then_ty)) {
       errormsg->Error(pos_, "then exp and else exp type mismatch");
     }
+  } else {
+    if (!then_ty->IsSameType(type::VoidTy::Instance())) {
+      errormsg->Error(pos_, "if-then exp's body must produce no value");
+    }
   }
-  return type::VoidTy::Instance();
+  return then_ty->ActualTy();
 }
 
 type::Ty *WhileExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
@@ -269,7 +272,7 @@ type::Ty *ForExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   printf("analyzing ForExp...\n");
   venv->BeginScope();
   tenv->BeginScope();
-  venv->Enter(var_, new env::VarEntry(type::IntTy::Instance()));
+  venv->Enter(var_, new env::VarEntry(type::IntTy::Instance(), true));
   type::Ty *lo_ty =
       lo_->SemAnalyze(venv, tenv, labelcount, errormsg)->ActualTy();
   type::Ty *hi_ty =
@@ -336,7 +339,6 @@ type::Ty *ArrayExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   }
   if (!init_ty->IsSameType(
           static_cast<type::ArrayTy *>(type_ty->ActualTy())->ty_->ActualTy())) {
-    printf("aaa\n");
     errormsg->Error(pos_, "type mismatch");
   }
   return type_ty->ActualTy();
@@ -419,7 +421,7 @@ void VarDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv, int labelcount,
   }
   type::Ty *init_ty =
       init_->SemAnalyze(venv, tenv, labelcount, errormsg)->ActualTy();
-  if (init_ty->IsSameType(type::NilTy::Instance())) {
+  if (typ_ == nullptr && typeid(*init_ty) == typeid(*type::NilTy::Instance())) {
     errormsg->Error(pos_, "init should not be nil without type specified");
   }
   if (typ_ty && !init_ty->IsSameType(typ_ty->ActualTy())) {
@@ -506,4 +508,4 @@ void ProgSem::SemAnalyze() {
   absyn_tree_->SemAnalyze(venv_.get(), tenv_.get(), errormsg_.get());
 }
 
-} // namespace tr
+} // namespace sem
