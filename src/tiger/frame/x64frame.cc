@@ -33,7 +33,7 @@ class X64Frame : public Frame {
 public:
   explicit X64Frame(temp::Label *name, std::list<bool> formals) {
     name_ = name;
-    size_ = reg_manager->WordSize();
+    size_ = 0;
 
     for (auto formal : formals)
       formals_.push_back(allocLocal(formal));
@@ -45,7 +45,7 @@ public:
   Access *allocLocal(bool escape) {
     Access *access;
     if (escape) {
-      access = new InFrameAccess(-size_);
+      access = new InFrameAccess(-size_ - reg_manager->WordSize());
       size_ += reg_manager->WordSize();
     } else {
       access = new InRegAccess(temp::TempFactory::NewTemp());
@@ -64,6 +64,32 @@ tree::Exp *ExternalCall(std::string s, tree::ExpList *args) {
                            args);
 }
 
+/**
+ * IMPORTANT:
+ * The ProcEntryExit1 function is resolved into two function, which are
+ * tr::GetProcFrag and frame::ProcEntryExit1_Refactor. tr::GetProcFrag is to
+ * generate the main routine of the function, and frame::ProcEntryExit1_Refactor
+ * is to save and recover the callee-saved-registers.
+ * This is because add objects in the end of the seqStm is time-cosuming.
+ */
+
+assem::InstrList *ProcEntryExit1_Refactor(assem::InstrList *instr_list) {
+  temp::TempList *callee_regs = reg_manager->CalleeSaves();
+  for (int i = 0; i < callee_regs->GetList().size(); i++) {
+    temp::Temp *new_temp = temp::TempFactory::NewTemp();
+
+    instr_list->Insert(
+        instr_list->GetList().begin(),
+        new assem::MoveInstr("movq `s0,`d0", new temp::TempList(new_temp),
+                             new temp::TempList(callee_regs->NthTemp(i))));
+
+    instr_list->Append(new assem::MoveInstr(
+        "movq `s0,`d0", new temp::TempList(callee_regs->NthTemp(i)),
+        new temp::TempList(new_temp)));
+  }
+  return instr_list;
+}
+
 assem::InstrList *ProcEntryExit2(assem::InstrList *body) {
   body->Append(new assem::OperInstr("", new temp::TempList(),
                                     reg_manager->ReturnSink(), nullptr));
@@ -71,10 +97,16 @@ assem::InstrList *ProcEntryExit2(assem::InstrList *body) {
 }
 
 assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList *body) {
-  char buf[100];
-  sprintf(buf, "PROCEDURE %s\n",
-          temp::LabelFactory::LabelString(frame->name_).data());
-  return new assem::Proc(std::string(buf), body, "END\n");
+  std::string prologue = "";
+  prologue += ".set " + frame->name_->Name() + std::string("_framesize, ") +
+              std::to_string(frame->size_) + "\n";
+  prologue += frame->name_->Name() + ":\n";
+  prologue += "subq $" + std::to_string(frame->size_) + ",%rsp\n";
+
+  std::string epilogue = "";
+  epilogue += "addq $" + std::to_string(frame->size_) + ",%rsp\n";
+  epilogue += "retq\n";
+  return new assem::Proc(prologue, body, epilogue);
 }
 
 } // namespace frame

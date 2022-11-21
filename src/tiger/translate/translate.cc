@@ -160,7 +160,6 @@ frame::ProcFrag *GetProcFrag(frame::Frame *frame, tree::Stm *stm) {
       move_stm = new tree::MoveStm(
           formal->ToExp(frame_ptr),
           new tree::TempExp(reg_manager->ArgRegs()->NthTemp(i_temp)));
-      i_temp++;
     } else {
       move_stm =
           new tree::MoveStm(formal->ToExp(frame_ptr),
@@ -169,6 +168,7 @@ frame::ProcFrag *GetProcFrag(frame::Frame *frame, tree::Stm *stm) {
                                 new tree::ConstExp(reg_manager->WordSize() *
                                                    (i_temp + 1 - max_temp)))));
     }
+    i_temp++;
     formal_movestms.push_back(move_stm);
   }
 
@@ -189,9 +189,9 @@ void ProgTr::Translate() {
   /* TODO: Put your lab5 code here */
   FillBaseVEnv();
   FillBaseTEnv();
-  tr::ExpAndTy *absyn_ExpAndTy =
-      absyn_tree_->Translate(venv_.get(), tenv_.get(), main_level_.get(),
-                             temp::LabelFactory::NewLabel(), errormsg_.get());
+  tr::ExpAndTy *absyn_ExpAndTy = absyn_tree_->Translate(
+      venv_.get(), tenv_.get(), main_level_.get(),
+      temp::LabelFactory::NamedLabel(MAIN_LABEL_NAME), errormsg_.get());
 
   frags->PushBack(
       GetProcFrag(main_level_->frame_, absyn_ExpAndTy->exp_->UnNx()));
@@ -288,7 +288,7 @@ tr::ExpAndTy *StringExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                                    err::ErrorMsg *errormsg) const {
   /* TODO: Put your lab5 code here */
   temp::Label *string_label = temp::LabelFactory::NewLabel();
-  frags->PushBack(new frame::StringFrag(label, str_));
+  frags->PushBack(new frame::StringFrag(string_label, str_));
   return new tr::ExpAndTy(new tr::ExExp(new tree::NameExp(string_label)),
                           type::StringTy::Instance());
 }
@@ -354,13 +354,22 @@ tr::ExpAndTy *OpExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   case Oper::GE_OP:
     tree_relop = tree::GE_OP;
     goto return_glexp;
-  // =&!=
+  // =!=
   case EQ_OP:
     tree_relop = tree::EQ_OP;
     goto return_eqexp;
   case NEQ_OP:
     tree_relop = tree::NE_OP;
     goto return_eqexp;
+  // &|
+  case Oper::AND_OP:
+    tree_binop = tree::AND_OP;
+    goto return_andexp;
+  case Oper::OR_OP:
+    tree_binop = tree::OR_OP;
+    goto return_orexp;
+  default:
+    assert(0);
   }
 
 return_exexp : {
@@ -399,6 +408,36 @@ return_eqexp : {
                                         tr::PatchList({&stm->false_label_}),
                                         stm),
                           type::IntTy::Instance());
+}
+
+return_andexp : {
+  temp::Label *t = temp::LabelFactory::NewLabel();
+  tr::Cx left_Cx = left_ExpAndTy->exp_->UnCx(errormsg);
+  tr::Cx right_Cx = right_ExpAndTy->exp_->UnCx(errormsg);
+  left_Cx.trues_.DoPatch(t);
+
+  return new tr::ExpAndTy(
+      new tr::CxExp(
+          tr::PatchList(right_Cx.trues_),
+          tr::PatchList(tr::PatchList::JoinPatch(left_Cx.falses_, right_Cx.falses_)),
+          new tree::SeqStm(left_Cx.stm_, new tree::SeqStm(new tree::LabelStm(t),
+                                                          right_Cx.stm_))),
+      type::IntTy::Instance());
+}
+
+return_orexp : {
+  temp::Label *f = temp::LabelFactory::NewLabel();
+  tr::Cx left_Cx = left_ExpAndTy->exp_->UnCx(errormsg);
+  tr::Cx right_Cx = right_ExpAndTy->exp_->UnCx(errormsg);
+  left_Cx.falses_.DoPatch(f);
+
+  return new tr::ExpAndTy(
+      new tr::CxExp(
+          tr::PatchList(tr::PatchList::JoinPatch(left_Cx.trues_, right_Cx.trues_)),
+          tr::PatchList(right_Cx.falses_),
+          new tree::SeqStm(left_Cx.stm_, new tree::SeqStm(new tree::LabelStm(f),
+                                                          right_Cx.stm_))),
+      type::IntTy::Instance());
 }
 }
 

@@ -65,7 +65,7 @@ public:
 
   /**
    * Get some register
-  */
+   */
   [[nodiscard]] virtual temp::Temp *Rax() = 0;
 
   [[nodiscard]] virtual temp::Temp *Rdx() = 0;
@@ -150,6 +150,15 @@ private:
 
 /* TODO: Put your lab5 code here */
 tree::Exp *ExternalCall(std::string s, tree::ExpList *args);
+/**
+ * IMPORTANT:
+ * The ProcEntryExit1 function is resolved into two function, which are
+ * tr::GetProcFrag and frame::ProcEntryExit1_Refactor. tr::GetProcFrag is to
+ * generate the main routine of the function, and frame::ProcEntryExit1_Refactor
+ * is to save and recover the callee-saved-registers.
+ * This is because add objects in the end of the seqStm is time-cosuming.
+ */
+assem::InstrList *ProcEntryExit1_Refactor(assem::InstrList *instr_list);
 assem::InstrList *ProcEntryExit2(assem::InstrList *body);
 assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList *body);
 
