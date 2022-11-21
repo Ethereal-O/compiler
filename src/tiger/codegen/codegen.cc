@@ -100,8 +100,7 @@ void MoveStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
         if (typeid(*mem_of_bin->left_) == typeid(ConstExp) ||
             typeid(*mem_of_bin->right_) == typeid(ConstExp)) {
           // movq Imm(r),d
-          bool is_left =
-              typeid(*mem_of_bin->left_) == typeid(ConstExp) ? true : false;
+          bool is_left = typeid(*mem_of_bin->left_) == typeid(ConstExp);
           ConstExp *cst_exp = is_left
                                   ? static_cast<ConstExp *>(mem_of_bin->left_)
                                   : static_cast<ConstExp *>(mem_of_bin->right_);
@@ -323,8 +322,7 @@ temp::Temp *MemExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
       if (typeid(*exp_of_bin->left_) == typeid(ConstExp) ||
           typeid(*exp_of_bin->right_) == typeid(ConstExp)) {
         // movq Imm(r),d
-        bool is_left =
-            typeid(*exp_of_bin->left_) == typeid(ConstExp) ? true : false;
+        bool is_left = typeid(*exp_of_bin->left_) == typeid(ConstExp);
         ConstExp *cst_exp = is_left
                                 ? static_cast<ConstExp *>(exp_of_bin->left_)
                                 : static_cast<ConstExp *>(exp_of_bin->right_);
