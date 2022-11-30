@@ -6,4 +6,11 @@ extern frame::RegManager *reg_manager;
 
 namespace ra {
 /* TODO: Put your lab6 code here */
+void RegAllocator::RegAlloc()
+{
+    allocation_=std::make_unique<Result>();
+}
+
+
+
 } // namespace ra
