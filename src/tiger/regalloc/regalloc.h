@@ -23,7 +23,7 @@ public:
   Result(Result &&result) = delete;
   Result &operator=(const Result &result) = delete;
   Result &operator=(Result &&result) = delete;
-  ~Result();
+  ~Result(){};
 };
 
 class RegAllocator {
