@@ -419,7 +419,8 @@ return_andexp : {
   return new tr::ExpAndTy(
       new tr::CxExp(
           tr::PatchList(right_Cx.trues_),
-          tr::PatchList(tr::PatchList::JoinPatch(left_Cx.falses_, right_Cx.falses_)),
+          tr::PatchList(
+              tr::PatchList::JoinPatch(left_Cx.falses_, right_Cx.falses_)),
           new tree::SeqStm(left_Cx.stm_, new tree::SeqStm(new tree::LabelStm(t),
                                                           right_Cx.stm_))),
       type::IntTy::Instance());
@@ -433,7 +434,8 @@ return_orexp : {
 
   return new tr::ExpAndTy(
       new tr::CxExp(
-          tr::PatchList(tr::PatchList::JoinPatch(left_Cx.trues_, right_Cx.trues_)),
+          tr::PatchList(
+              tr::PatchList::JoinPatch(left_Cx.trues_, right_Cx.trues_)),
           tr::PatchList(right_Cx.falses_),
           new tree::SeqStm(left_Cx.stm_, new tree::SeqStm(new tree::LabelStm(f),
                                                           right_Cx.stm_))),
@@ -553,12 +555,7 @@ tr::ExpAndTy *IfExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
                         new tree::SeqStm(
                             new tree::MoveStm(new tree::TempExp(result_temp),
                                               else_ExpAndTy->exp_->UnEx()),
-                            new tree::SeqStm(
-                                new tree::JumpStm(
-                                    new tree::NameExp(final_label),
-                                    new std::vector<temp::Label *>(
-                                        {final_label})),
-                                new tree::LabelStm(final_label))))))));
+                            new tree::LabelStm(final_label)))))));
     return new tr::ExpAndTy(
         new tr::ExExp(new tree::EseqExp(seq, new tree::TempExp(result_temp))),
         then_ExpAndTy->ty_->ActualTy());
