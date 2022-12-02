@@ -77,6 +77,14 @@ public:
   temp::Temp *Rax() { return regs_[0]; }
 
   temp::Temp *Rdx() { return regs_[3]; }
+
+  temp::TempList *RegistersExceptRsp() {
+    temp::TempList *tempList = new temp::TempList(
+        {regs_[0], regs_[1], regs_[2], regs_[3], regs_[4], regs_[5], regs_[6],
+         regs_[8], regs_[9], regs_[10], regs_[11], regs_[12], regs_[13],
+         regs_[14], regs_[15]});
+    return tempList;
+  }
 };
 
 } // namespace frame

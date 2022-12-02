@@ -70,6 +70,11 @@ public:
 
   [[nodiscard]] virtual temp::Temp *Rdx() = 0;
 
+  /**
+   * Get all registers except rsp
+  */
+  [[nodiscard]] virtual temp::TempList *RegistersExceptRsp() = 0;
+
   temp::Map *temp_map_;
 
 protected:
