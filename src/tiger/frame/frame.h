@@ -72,7 +72,7 @@ public:
 
   /**
    * Get all registers except rsp
-  */
+   */
   [[nodiscard]] virtual temp::TempList *RegistersExceptRsp() = 0;
 
   temp::Map *temp_map_;

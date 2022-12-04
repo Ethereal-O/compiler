@@ -45,9 +45,23 @@ MoveList *MoveList::Intersect(MoveList *list) {
 }
 
 temp::TempList *Union(temp::TempList *list_A, temp::TempList *list_B) {
-  assert(list_A);
-  assert(list_B);
   temp::TempList *res = new temp::TempList();
+
+  if (!list_A && !list_B)
+    return res;
+
+  if (!list_A) {
+    for (auto item_B : list_B->GetList())
+      res->Append(item_B);
+    return res;
+  }
+
+  if (!list_B) {
+    for (auto item_A : list_A->GetList())
+      res->Append(item_A);
+    return res;
+  }
+
   for (auto item_A : list_A->GetList())
     res->Append(item_A);
 
@@ -59,13 +73,14 @@ temp::TempList *Union(temp::TempList *list_A, temp::TempList *list_B) {
 }
 
 temp::TempList *Subtract(temp::TempList *list_A, temp::TempList *list_B) {
-  assert(list_A);
-  assert(list_B);
   temp::TempList *res = new temp::TempList();
 
+  if (!list_A)
+    return res;
+
   for (auto item_A : list_A->GetList())
-    if (std::find(list_B->GetList().begin(), list_B->GetList().end(), item_A) ==
-        list_B->GetList().end())
+    if (!list_B || std::find(list_B->GetList().begin(), list_B->GetList().end(),
+                             item_A) == list_B->GetList().end())
       res->Append(item_A);
 
   return res;
@@ -120,15 +135,15 @@ void LiveGraphFactory::InterfGraph() {
   /* TODO: Put your lab6 code here */
   live_graph_.moves = new MoveList();
 
-  for (auto reg : reg_manager->RegistersExceptRsp()->GetList())
+  temp::TempList *reg_except_rsp = reg_manager->RegistersExceptRsp();
+
+  for (auto reg : reg_except_rsp->GetList())
     temp_node_map_->Enter(reg, live_graph_.interf_graph->NewNode(reg));
 
-  for (auto reg_it_A = reg_manager->RegistersExceptRsp()->GetList().begin();
-       reg_it_A != reg_manager->RegistersExceptRsp()->GetList().end();
-       reg_it_A++)
+  for (auto reg_it_A = reg_except_rsp->GetList().begin();
+       reg_it_A != reg_except_rsp->GetList().end(); reg_it_A++)
     for (auto reg_it_B = std::next(reg_it_A);
-         reg_it_B != reg_manager->RegistersExceptRsp()->GetList().end();
-         reg_it_B++) {
+         reg_it_B != reg_except_rsp->GetList().end(); reg_it_B++) {
       live_graph_.interf_graph->AddEdge(temp_node_map_->Look(*reg_it_A),
                                         temp_node_map_->Look(*reg_it_B));
       live_graph_.interf_graph->AddEdge(temp_node_map_->Look(*reg_it_B),

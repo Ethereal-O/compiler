@@ -62,8 +62,11 @@ private:
   live::IGraphPtr adjGraph;
   live::INodeListPtr selectStack;
   live::INodeListPtr coalescedNodes;
+  live::INodeListPtr coloredNodes;
   live::MoveList *frozenMoves;
   live::MoveList *activeMoves;
+  live::MoveList *coalescedMoves;
+  live::MoveList *constrainedMoves;
   // additional vars for temporaily store data
   live::LiveGraph live_graph_;
   // additional functions
@@ -72,6 +75,7 @@ private:
   void MakeWorklist();
   void AssignColor();
   void RewriteProgram();
+  temp::Map *AssignRegisters();
   // additional functions for loop
   void Simplify();
   void Coalesce();
@@ -85,12 +89,14 @@ private:
   void Decrement(live::INodePtr node);
   void EnableMoves(live::INodeListPtr nodes);
   void AddWorkList(live::INodePtr node);
+  bool AllOK(live::INodePtr node_A, live::INodePtr node_B);
   bool OK(live::INodePtr node_A, live::INodePtr node_B);
   bool Conservative(live::INodeListPtr nodes);
   live::INodePtr GetAlias(live::INodePtr node);
   void Combine(live::INodePtr node_A, live::INodePtr node_B);
   void FreezeMoves(live::INodePtr node);
-  void SelectSpill();
+  temp::TempList *replaceTempList(temp::TempList *temp_list,
+                                  temp::Temp *old_temp, temp::Temp *new_temp);
 };
 
 } // namespace ra

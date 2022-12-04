@@ -19,7 +19,8 @@ void FlowGraphFactory::AssemFlowGraph() {
     } else if (typeid(*instr) == typeid(assem::OperInstr) &&
                static_cast<assem::OperInstr *>(instr)->jumps_) {
       from = nullptr;
-      jump_list.emplace_back(instr, to);
+      jump_list.emplace_back(
+          std::make_pair(static_cast<assem::OperInstr *>(instr), to));
     } else {
       from = to;
     }
