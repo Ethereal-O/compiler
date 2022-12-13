@@ -4,11 +4,11 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <vector>
 
+#include "tiger/codegen/assem.h"
 #include "tiger/frame/temp.h"
 #include "tiger/translate/tree.h"
-#include "tiger/codegen/assem.h"
-
 
 namespace frame {
 
@@ -63,7 +63,20 @@ public:
 
   [[nodiscard]] virtual temp::Temp *ReturnValue() = 0;
 
+  /**
+   * Get some register
+   */
+  [[nodiscard]] virtual temp::Temp *Rax() = 0;
+
+  [[nodiscard]] virtual temp::Temp *Rdx() = 0;
+
+  /**
+   * Get all registers except rsp
+   */
+  [[nodiscard]] virtual temp::TempList *RegistersExceptRsp() = 0;
+
   temp::Map *temp_map_;
+
 protected:
   std::vector<temp::Temp *> regs_;
 };
@@ -71,13 +84,21 @@ protected:
 class Access {
 public:
   /* TODO: Put your lab5 code here */
-  
+  virtual tree::Exp *ToExp(tree::Exp *framePtr) const = 0;
   virtual ~Access() = default;
-  
 };
 
 class Frame {
   /* TODO: Put your lab5 code here */
+public:
+  temp::Label *name_;
+  std::list<frame::Access *> formals_;
+  uint32_t size_;
+
+  std::string GetLabel() { return name_->Name(); }
+
+  virtual Access *allocLocal(bool escape) = 0;
+  static frame::Frame *NewFrame(temp::Label *name, std::list<bool> formals);
 };
 
 /**
@@ -97,7 +118,8 @@ public:
    *Generate assembly for main program
    * @param out FILE object for output assembly file
    */
-  virtual void OutputAssem(FILE *out, OutputPhase phase, bool need_ra) const = 0;
+  virtual void OutputAssem(FILE *out, OutputPhase phase,
+                           bool need_ra) const = 0;
 };
 
 class StringFrag : public Frag {
@@ -125,13 +147,25 @@ class Frags {
 public:
   Frags() = default;
   void PushBack(Frag *frag) { frags_.emplace_back(frag); }
-  const std::list<Frag*> &GetList() { return frags_; }
+  const std::list<Frag *> &GetList() { return frags_; }
 
 private:
-  std::list<Frag*> frags_;
+  std::list<Frag *> frags_;
 };
 
 /* TODO: Put your lab5 code here */
+tree::Exp *ExternalCall(std::string s, tree::ExpList *args);
+/**
+ * IMPORTANT:
+ * The ProcEntryExit1 function is resolved into two function, which are
+ * tr::GetProcFrag and frame::ProcEntryExit1_Refactor. tr::GetProcFrag is to
+ * generate the main routine of the function, and frame::ProcEntryExit1_Refactor
+ * is to save and recover the callee-saved-registers.
+ * This is because add objects in the end of the seqStm is time-cosuming.
+ */
+assem::InstrList *ProcEntryExit1_Refactor(assem::InstrList *instr_list);
+assem::InstrList *ProcEntryExit2(assem::InstrList *body);
+assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList *body);
 
 } // namespace frame
 

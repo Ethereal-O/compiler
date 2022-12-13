@@ -44,9 +44,11 @@ class LabelInstr : public Instr {
 public:
   std::string assem_;
   temp::Label *label_;
+  temp::TempList *dst_, *src_;
 
   LabelInstr(std::string assem, temp::Label *label)
-      : assem_(std::move(assem)), label_(label) {}
+      : assem_(std::move(assem)), label_(label), dst_(new temp::TempList()),
+        src_(new temp::TempList()) {}
 
   void Print(FILE *out, temp::Map *m) const override;
   [[nodiscard]] temp::TempList *Def() const override;
