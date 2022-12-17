@@ -13,6 +13,7 @@ extern frame::RegManager *reg_manager;
 extern std::vector<std::string> functions_ret_pointers;
 
 #define GC
+#define BITMAP_LABEL "_DESCRIPTOR"
 
 namespace tr {
 
@@ -189,18 +190,18 @@ frame::ProcFrag *GetProcFrag(frame::Frame *frame, tree::Stm *stm) {
 }
 
 void GetSringFrag(type::RecordTy *ty, sym::Symbol *name) {
-  std::string pointer_map;
+  std::string pointer_bitmap;
   std::list<type::Field *> field_list = ty->fields_->GetList();
   for (auto field : field_list)
     if (typeid(*field->ty_->ActualTy()) == typeid(type::RecordTy) ||
         typeid(*field->ty_->ActualTy()) == typeid(type::ArrayTy))
-      pointer_map += '1';
+      pointer_bitmap += '1';
     else
-      pointer_map += '0';
+      pointer_bitmap += '0';
 
   frags->PushBack(new frame::StringFrag(
-      temp::LabelFactory::NamedLabel(name->Name() + "_DESCRIPTOR"),
-      pointer_map));
+      temp::LabelFactory::NamedLabel(name->Name() + BITMAP_LABEL),
+      pointer_bitmap));
 }
 
 void ProgTr::Translate() {
@@ -475,7 +476,7 @@ tr::ExpAndTy *RecordExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
 #ifdef GC
                                  ,
                              new tree::NameExp(temp::LabelFactory::NamedLabel(
-                                 typ_->Name() + "_DESCRIPTOR"))
+                                 typ_->Name() + BITMAP_LABEL))
 #endif
           })));
 

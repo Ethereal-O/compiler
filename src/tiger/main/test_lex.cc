@@ -4,10 +4,15 @@
 #include <map>
 
 #include "tiger/lex/scanner.h"
+#include "tiger/output/output.h"
 
 // Define here to pass compilation, but no use here
 frame::RegManager *reg_manager;
 frame::Frags frags;
+std::vector<gc::PointerMap> global_roots;
+std::vector<int> frame_pointers;
+std::vector<int> reg_pointers;
+std::vector<std::string> functions_ret_pointers;
 
 int main(int argc, char **argv) {
   std::map<int, std::string_view> tokname = {{Parser::ID, "ID"},

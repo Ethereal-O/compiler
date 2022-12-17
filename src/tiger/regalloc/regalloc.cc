@@ -183,10 +183,6 @@ void RegAllocator::RewriteProgram() {
 
         *dst = replaceTempList(*dst, node->NodeInfo(), new_temp);
 
-/**
- * TODO:
- * change stackpointer into src lists
-*/
         assem_instr_->GetInstrList()->Insert(
             std::next(instr_it),
             new assem::OperInstr(

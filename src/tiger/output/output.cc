@@ -24,9 +24,9 @@ std::string GetOutputPointerMap(gc::PointerMap global_root) {
   return all_str;
 }
 
-std::vector<int> GetEscapePointers(frame::Frame *frame_) {
+std::vector<int> GetEscapePointers(frame::Frame *frame) {
   std::vector<int> escape_pointers;
-  for (auto access : frame_->formals_)
+  for (auto access : frame->formals_)
     if (typeid(*access) == typeid(frame::InFrameAccess) &&
         static_cast<frame::InFrameAccess *>(access)->isStorePointer)
       escape_pointers.push_back(
@@ -34,29 +34,31 @@ std::vector<int> GetEscapePointers(frame::Frame *frame_) {
   return escape_pointers;
 }
 
-assem::InstrList *GenPointerMap(assem::InstrList *il, frame::Frame *frame_,
+assem::InstrList *GenPointerMap(assem::InstrList *il, frame::Frame *frame,
                                 std::vector<int> escape_pointers,
                                 temp::Map *color) {
   fg::FlowGraphFactory flow_graph_factory = fg::FlowGraphFactory(il);
   flow_graph_factory.AssemFlowGraph();
-  gc::Roots roots = gc::Roots(il, frame_, flow_graph_factory.GetFlowGraph(),
+  gc::Roots roots = gc::Roots(il, frame, flow_graph_factory.GetFlowGraph(),
                               escape_pointers, color);
-  std::vector<gc::PointerMap> new_global_roots = roots.GetPointerMaps();
-  il = roots.GetInstrList();
 
+  std::vector<gc::PointerMap> new_global_roots = roots.GetPointerMaps();
   if (global_roots.size() && new_global_roots.size())
     global_roots.back().next_label = new_global_roots.front().label;
+
   global_roots.insert(global_roots.end(), new_global_roots.begin(),
                       new_global_roots.end());
+  il = roots.GetInstrList();
+
   return il;
 }
 
 void OutputPointerMap(FILE *out_) {
   if (global_roots.size())
     global_roots.back().next_label = "0";
-  fprintf(out_, (".global " + gc::GC_ROOTS + "\n").c_str());
-  fprintf(out_, ".data\n");
-  fprintf(out_, (gc::GC_ROOTS + ":\n").c_str());
+  fprintf(out_, "%s", (".global " + gc::GC_ROOTS + "\n").c_str());
+  fprintf(out_, "%s", ".data\n");
+  fprintf(out_, "%s", (gc::GC_ROOTS + ":\n").c_str());
   for (auto global_root : global_roots)
     fprintf(out_, "%s", GetOutputPointerMap(global_root).c_str());
 }
@@ -77,7 +79,7 @@ void AssemGen::GenAssem(bool need_ra) {
     frag->OutputAssem(out_, phase, need_ra);
 
 #ifdef GC
-  // output pointerMap
+  // Output pointer_bitmap
   OutputPointerMap(out_);
 #endif
 }

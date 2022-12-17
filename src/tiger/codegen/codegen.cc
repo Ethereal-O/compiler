@@ -64,7 +64,9 @@ void TransferPointer(assem::Instr *instr) {
     assem::OperInstr *oper_instr = static_cast<assem::OperInstr *>(instr);
     if ((oper_instr->assem_.find("add") != oper_instr->assem_.npos ||
          oper_instr->assem_.find("sub") != oper_instr->assem_.npos) &&
-        oper_instr->dst_ && oper_instr->src_)
+        oper_instr->dst_ && oper_instr->src_ &&
+        oper_instr->dst_->GetList().size() > 0 &&
+        oper_instr->src_->GetList().size() > 0)
       oper_instr->dst_->GetList().front()->isStorePointer =
           oper_instr->src_->GetList().front()->isStorePointer;
   }
@@ -538,20 +540,13 @@ temp::Temp *CallExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
                      nullptr));
 
 #ifdef GC
-  temp::Label *return_addr_label = temp::LabelFactory::NewLabel();
-  assem::Instr *ins_label = new assem::LabelInstr(
-      temp::LabelFactory::LabelString(return_addr_label), return_addr_label);
-  cg::AppendList(instr_list, ins_label);
-
-  temp::Temp *ret_reg = temp::TempFactory::NewTemp();
+  temp::Label *return_label = temp::LabelFactory::NewLabel();
+  cg::AppendList(instr_list, new assem::LabelInstr(
+                                 temp::LabelFactory::LabelString(return_label),
+                                 return_label));
 
   reg_manager->ReturnValue()->isStorePointer =
       cg::ReturnIsPointer(static_cast<NameExp *>(fun_)->name_->Name());
-
-  cg::AppendList(
-      instr_list,
-      new assem::MoveInstr("movq `s0, `d0", new temp::TempList(ret_reg),
-                           new temp::TempList(reg_manager->ReturnValue())));
 #endif
 
   if (args_size > args_max_size)
@@ -578,6 +573,9 @@ temp::TempList *ExpList::MunchArgs(assem::InstrList &instr_list,
     temp::Temp *exp_temp = exp->Munch(instr_list, fs);
     switch (i) {
     case 0:
+#ifdef GC
+      reg_manager->ArgRegs()->NthTemp(i)->isStorePointer = cg::RegIsPointer(i);
+#endif
       temp_list->Append(arg_temp_list->NthTemp(i));
       if (exp_temp == reg_manager->FramePointer())
         cg::AppendList(instr_list,
@@ -591,19 +589,16 @@ temp::TempList *ExpList::MunchArgs(assem::InstrList &instr_list,
             new assem::MoveInstr("movq `s0,`d0",
                                  new temp::TempList(arg_temp_list->NthTemp(i)),
                                  new temp::TempList(exp_temp)));
-#ifdef GC
-      reg_manager->ArgRegs()->NthTemp(i)->isStorePointer = cg::RegIsPointer(i);
-#endif
       break;
     case 1:
     case 2:
     case 3:
     case 4:
     case 5:
-      temp_list->Append(arg_temp_list->NthTemp(i));
 #ifdef GC
       reg_manager->ArgRegs()->NthTemp(i)->isStorePointer = cg::RegIsPointer(i);
 #endif
+      temp_list->Append(arg_temp_list->NthTemp(i));
       cg::AppendList(
           instr_list,
           new assem::MoveInstr("movq `s0,`d0",
