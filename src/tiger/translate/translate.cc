@@ -10,6 +10,9 @@
 
 extern frame::Frags *frags;
 extern frame::RegManager *reg_manager;
+extern std::vector<std::string> functions_ret_pointers;
+
+#define GC
 
 namespace tr {
 
@@ -183,6 +186,21 @@ frame::ProcFrag *GetProcFrag(frame::Frame *frame, tree::Stm *stm) {
   }
 
   return new frame::ProcFrag(stm, frame);
+}
+
+void GetSringFrag(type::RecordTy *ty, sym::Symbol *name) {
+  std::string pointer_map;
+  std::list<type::Field *> field_list = ty->fields_->GetList();
+  for (auto field : field_list)
+    if (typeid(*field->ty_->ActualTy()) == typeid(type::RecordTy) ||
+        typeid(*field->ty_->ActualTy()) == typeid(type::ArrayTy))
+      pointer_map += '1';
+    else
+      pointer_map += '0';
+
+  frags->PushBack(new frame::StringFrag(
+      temp::LabelFactory::NamedLabel(name->Name() + "_DESCRIPTOR"),
+      pointer_map));
 }
 
 void ProgTr::Translate() {
@@ -453,7 +471,13 @@ tr::ExpAndTy *RecordExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
       new tree::CallExp(
           new tree::NameExp(temp::LabelFactory::NamedLabel("alloc_record")),
           new tree::ExpList({new tree::ConstExp(fields_->GetList().size() *
-                                                reg_manager->WordSize())})));
+                                                reg_manager->WordSize())
+#ifdef GC
+                                 ,
+                             new tree::NameExp(temp::LabelFactory::NamedLabel(
+                                 typ_->Name() + "_DESCRIPTOR"))
+#endif
+          })));
 
   // transform list into vector
   std::vector<tr::ExpAndTy *> tr_ExpAndTys;
@@ -763,16 +787,27 @@ tr::Exp *FunctionDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
     auto access_it = frame.begin();
     access_it++;
     for (; param_it != a_fun_dec->params_->GetList().end();
-         formal_it++, param_it++, access_it++)
+         formal_it++, param_it++, access_it++) {
       venv->Enter((*param_it)->name_,
                   new env::VarEntry(new tr::Access(entry->level_, *access_it),
                                     *formal_it));
+#ifdef GC
+      if (typeid(*(*formal_it)->ActualTy()) == typeid(type::ArrayTy) ||
+          typeid(*(*formal_it)->ActualTy()) == typeid(type::RecordTy))
+        (*access_it)->setIsStorePointer(true);
+#endif
+    }
 
     tr::ExpAndTy *fun_body_ExpAndTy = a_fun_dec->body_->Translate(
         venv, tenv, entry->level_, entry->label_, errormsg);
     tree::MoveStm *return_stm =
         new tree::MoveStm(new tree::TempExp(reg_manager->ReturnValue()),
                           fun_body_ExpAndTy->exp_->UnEx());
+#ifdef GC
+    if (typeid(*entry->result_->ActualTy()) == typeid(type::ArrayTy) ||
+        typeid(*entry->result_->ActualTy()) == typeid(type::RecordTy))
+      functions_ret_pointers.push_back(entry->label_->Name());
+#endif
     frags->PushBack(tr::GetProcFrag(entry->level_->frame_, return_stm));
     venv->EndScope();
   }
@@ -788,6 +823,11 @@ tr::Exp *VarDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   tr::Access *access = tr::Access::AllocLocal(level, escape_);
   venv->Enter(var_, new env::VarEntry(new tr::Access(level, access->access_),
                                       init_ExpAndTy->ty_));
+#ifdef GC
+  if (typeid(*(init_ExpAndTy->ty_->ActualTy())) == typeid(type::RecordTy) ||
+      typeid(*(init_ExpAndTy->ty_->ActualTy())) == typeid(type::ArrayTy))
+    access->access_->setIsStorePointer(true);
+#endif
 
   return new tr::NxExp(new tree::MoveStm(
       access->access_->ToExp(new tree::TempExp(reg_manager->FramePointer())),
@@ -807,6 +847,15 @@ tr::Exp *TypeDec::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
         static_cast<type::NameTy *>(tenv->Look(a_name_and_ty->name_));
     new_ty->ty_ = a_name_and_ty->ty_->Translate(tenv, errormsg);
   }
+
+#ifdef GC
+  for (auto a_name_and_ty : types_->GetList()) {
+    type::NameTy *a_ty =
+        static_cast<type::NameTy *>(tenv->Look(a_name_and_ty->name_));
+    if (typeid(*a_ty->ty_->ActualTy()) == typeid(type::RecordTy))
+      tr::GetSringFrag(static_cast<type::RecordTy *>(a_ty->ty_), a_ty->sym_);
+  }
+#endif
 
   return new tr::ExExp(new tree::ConstExp(0));
 }

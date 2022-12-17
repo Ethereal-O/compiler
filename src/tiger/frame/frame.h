@@ -86,6 +86,7 @@ public:
   /* TODO: Put your lab5 code here */
   virtual tree::Exp *ToExp(tree::Exp *framePtr) const = 0;
   virtual ~Access() = default;
+  virtual void setIsStorePointer(bool willIsStorePointer) = 0;
 };
 
 class Frame {

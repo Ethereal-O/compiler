@@ -28,7 +28,10 @@ public:
 
 private:
   int num_;
-  explicit Temp(int num) : num_(num) {}
+  explicit Temp(int num) : num_(num), isStorePointer(false) {}
+
+public:
+  bool isStorePointer;
 };
 
 class TempFactory {
@@ -65,9 +68,10 @@ public:
   TempList(std::initializer_list<Temp *> list) : temp_list_(list) {}
   TempList() = default;
   void Append(Temp *t) { temp_list_.push_back(t); }
-    bool Contain(Temp *t) {
+  bool Contain(Temp *t) {
     for (auto temp : temp_list_) {
-      if (temp == t) return true;
+      if (temp == t)
+        return true;
     }
     return false;
   }

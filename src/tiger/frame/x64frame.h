@@ -92,12 +92,17 @@ public:
 class InFrameAccess : public Access {
 public:
   int offset;
+  bool isStorePointer;
 
-  explicit InFrameAccess(int offset) : offset(offset) {}
+  explicit InFrameAccess(int offset) : offset(offset), isStorePointer(false) {}
   /* TODO: Put your lab5 code here */
   tree::Exp *ToExp(tree::Exp *frame_ptr) const override {
     return new tree::MemExp(new tree::BinopExp(tree::PLUS_OP, frame_ptr,
                                                new tree::ConstExp(offset)));
+  }
+
+  void setIsStorePointer(bool willIsStorePointer) {
+    isStorePointer = willIsStorePointer;
   }
 };
 
@@ -109,6 +114,10 @@ public:
   /* TODO: Put your lab5 code here */
   tree::Exp *ToExp(tree::Exp *framePtr) const override {
     return new tree::TempExp(reg);
+  }
+
+  void setIsStorePointer(bool willIsStorePointer) {
+    reg->isStorePointer = willIsStorePointer;
   }
 };
 

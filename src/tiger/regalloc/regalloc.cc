@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <set>
 
+#define GC
+
 extern frame::RegManager *reg_manager;
 
 namespace ra {
@@ -135,6 +137,11 @@ void RegAllocator::RewriteProgram() {
   for (auto node : spilledNodes->GetList()) {
     frame::InFrameAccess *access =
         static_cast<frame::InFrameAccess *>(frame_->allocLocal(true));
+
+#ifdef GC
+    access->setIsStorePointer(node->NodeInfo()->isStorePointer);
+#endif
+
     for (auto instr_it = assem_instr_->GetInstrList()->GetList().begin();
          instr_it != assem_instr_->GetInstrList()->GetList().end();
          instr_it++) {
@@ -150,6 +157,11 @@ void RegAllocator::RewriteProgram() {
       if (src && std::find((*src)->GetList().begin(), (*src)->GetList().end(),
                            node->NodeInfo()) != (*src)->GetList().end()) {
         temp::Temp *new_temp = temp::TempFactory::NewTemp();
+
+#ifdef GC
+        new_temp->isStorePointer = node->NodeInfo()->isStorePointer;
+#endif
+
         *src = replaceTempList(*src, node->NodeInfo(), new_temp);
 
         assem_instr_->GetInstrList()->Insert(
@@ -164,8 +176,17 @@ void RegAllocator::RewriteProgram() {
       if (dst && std::find((*dst)->GetList().begin(), (*dst)->GetList().end(),
                            node->NodeInfo()) != (*dst)->GetList().end()) {
         temp::Temp *new_temp = temp::TempFactory::NewTemp();
+
+#ifdef GC
+        new_temp->isStorePointer = node->NodeInfo()->isStorePointer;
+#endif
+
         *dst = replaceTempList(*dst, node->NodeInfo(), new_temp);
 
+/**
+ * TODO:
+ * change stackpointer into src lists
+*/
         assem_instr_->GetInstrList()->Insert(
             std::next(instr_it),
             new assem::OperInstr(

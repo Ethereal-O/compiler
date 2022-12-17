@@ -9,6 +9,10 @@
 
 frame::RegManager *reg_manager;
 frame::Frags *frags;
+std::vector<gc::PointerMap> global_roots;
+std::vector<int> frame_pointers;
+std::vector<int> reg_pointers;
+std::vector<std::string> functions_ret_pointers;
 
 int main(int argc, char **argv) {
   std::string_view fname;
