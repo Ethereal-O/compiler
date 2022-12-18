@@ -170,7 +170,12 @@ void RegAllocator::RewriteProgram() {
                 "movq (" + frame_->name_->Name() + "_framesize" +
                     std::to_string(access->offset) + ")(`s0),`d0",
                 new temp::TempList(new_temp),
-                new temp::TempList(reg_manager->StackPointer()), nullptr));
+                new temp::TempList(reg_manager->StackPointer()), nullptr
+#ifdef GC
+                ,
+                access->offset
+#endif
+                ));
       }
 
       if (dst && std::find((*dst)->GetList().begin(), (*dst)->GetList().end(),
@@ -189,7 +194,12 @@ void RegAllocator::RewriteProgram() {
                 "movq `s0,(" + frame_->name_->Name() + "_framesize" +
                     std::to_string(access->offset) + ")(`d0)",
                 new temp::TempList(reg_manager->StackPointer()),
-                new temp::TempList(new_temp), nullptr));
+                new temp::TempList(new_temp), nullptr
+#ifdef GC
+                ,
+                access->offset
+#endif
+                ));
       }
     }
   }

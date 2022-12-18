@@ -16,6 +16,10 @@ using INodeListPtr = graph::NodeList<temp::Temp> *;
 using IGraph = graph::Graph<temp::Temp>;
 using IGraphPtr = graph::Graph<temp::Temp> *;
 
+temp::TempList *Union(temp::TempList *list_A, temp::TempList *list_B);
+temp::TempList *Subtract(temp::TempList *list_A, temp::TempList *list_B);
+bool IsSame(temp::TempList *list_A, temp::TempList *list_B);
+
 class MoveList {
 public:
   MoveList() = default;
@@ -60,8 +64,6 @@ public:
 private:
   fg::FGraphPtr flowgraph_;
   LiveGraph live_graph_;
-  // tmp make it public
-public:
   std::unique_ptr<graph::Table<assem::Instr, temp::TempList>> in_;
   std::unique_ptr<graph::Table<assem::Instr, temp::TempList>> out_;
   tab::Table<temp::Temp, INode> *temp_node_map_;

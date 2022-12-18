@@ -166,7 +166,8 @@ public:
 
   virtual void Print(FILE *out, int d) const = 0;
   virtual canon::StmAndExp Canon() = 0;
-  virtual temp::Temp *Munch(assem::InstrList &instr_list, std::string_view fs) = 0;
+  virtual temp::Temp *Munch(assem::InstrList &instr_list,
+                            std::string_view fs) = 0;
 };
 
 class BinopExp : public Exp {

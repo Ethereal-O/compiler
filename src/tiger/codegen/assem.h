@@ -7,6 +7,8 @@
 
 #include "tiger/frame/temp.h"
 
+#define GC
+
 namespace assem {
 
 class Targets {
@@ -31,9 +33,24 @@ public:
   temp::TempList *dst_, *src_;
   Targets *jumps_;
 
+#ifdef GC
+  int offset_;
+#endif
+
   OperInstr(std::string assem, temp::TempList *dst, temp::TempList *src,
-            Targets *jumps)
-      : assem_(std::move(assem)), dst_(dst), src_(src), jumps_(jumps) {}
+            Targets *jumps
+#ifdef GC
+            ,
+            int offset = 0
+#endif
+            )
+      : assem_(std::move(assem)), dst_(dst), src_(src), jumps_(jumps)
+#ifdef GC
+        ,
+        offset_(offset)
+#endif
+  {
+  }
 
   void Print(FILE *out, temp::Map *m) const override;
   [[nodiscard]] temp::TempList *Def() const override;

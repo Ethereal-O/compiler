@@ -212,7 +212,12 @@ void MoveStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
                 new assem::OperInstr(
                     instr_str, new temp::TempList(),
                     new temp::TempList{src_->Munch(instr_list, fs), temp_tmp},
-                    nullptr));
+                    nullptr
+#ifdef GC
+                    ,
+                    cst_exp->consti_
+#endif
+                    ));
           }
         } else {
           // movq (r), d
@@ -305,7 +310,12 @@ void MoveStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
           cg::AppendList(
               instr_list,
               new assem::OperInstr(instr_str, new temp::TempList(dst_temp),
-                                   new temp::TempList(temp_tmp), nullptr));
+                                   new temp::TempList(temp_tmp), nullptr
+#ifdef GC
+                                   ,
+                                   cst_exp->consti_
+#endif
+                                   ));
         } else {
           // movq (r), d
           cg::AppendList(
@@ -457,7 +467,12 @@ temp::Temp *MemExp::Munch(assem::InstrList &instr_list, std::string_view fs) {
         cg::AppendList(
             instr_list,
             new assem::OperInstr(instr_str, new temp::TempList(return_temp),
-                                 new temp::TempList(temp_tmp), nullptr));
+                                 new temp::TempList(temp_tmp), nullptr
+#ifdef GC
+                                 ,
+                                 cst_exp->consti_
+#endif
+                                 ));
       } else {
         // movq (r), d
         cg::AppendList(instr_list,

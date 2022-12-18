@@ -1,121 +1,98 @@
 #pragma once
 
+#include "algorithm"
 #include "heap.h"
 #include <vector>
-#include "algorithm"
 
 namespace gc {
 
 class DerivedHeap : public TigerHeap {
-  // TODO(lab7): You need to implement those interfaces inherited from TigerHeap correctly according to your design.
+  // TODO(lab7): You need to implement those interfaces inherited from TigerHeap
+  // correctly according to your design.
 public:
-char *Allocate(uint64_t size);
-uint64_t Used() const;
-uint64_t MaxFree() const;
-void Initialize(uint64_t size);
-void GC();
+  char *Allocate(uint64_t size);
+  uint64_t Used() const;
+  uint64_t MaxFree() const;
+  void Initialize(uint64_t size);
+  void GC();
 
 public:
-  /***************** necessary protocols********************/
-  struct recordInfo {
-    char *recordBeginPtr;
-    int recordSize;
-    int descriptorSize;
+  struct RecordInfo {
+    char *record_begin;
+    int record_size;
+    int descriptor_size;
     unsigned char *descriptor;
   };
 
-  struct arrayInfo {
-    char *arrayBeginPtr;
-    int arraySize;
+  struct ArrayInfo {
+    char *array_begin;
+    int array_size;
   };
 
-  struct freeIntervalInfo {
-    char *intervalStart;
-    uint64_t intervalSize;
-    char *intervalEnd;
+  struct FreeIntervalInfo {
+    int interval_size;
+    char *interval_start;
+    char *interval_end;
   };
 
-  struct markResult {
-    std::vector<int> arraiesActiveBitMap;
-    std::vector<int> recordsActiveBitMap;
+  struct MarkResult {
+    std::vector<int> arraies_active_bitmap;
+    std::vector<int> records_active_bitmap;
   };
 
-  /* ascending */
-  static inline bool compareIntervalBySize(freeIntervalInfo interval1,
-                                           freeIntervalInfo interval2) {
-    return interval1.intervalSize < interval2.intervalSize;
-  }
-
-  /* ascending */
-  static inline bool compareIntervalByStartAddr(freeIntervalInfo interval1,
-                                                freeIntervalInfo interval2) {
-    return (uint64_t)interval1.intervalStart <
-           (uint64_t)interval2.intervalStart;
-    // important!!!比较指针时转为uint64_t, 不要直接比较
-  }
-
-  /* 给heap中GC提供的结构(link后) */
   struct PointerMapBin {
-    uint64_t returnAddress;
-    uint64_t nextPointerMapAddress;
-    uint64_t frameSize;
-    uint64_t isMain;
-    std::vector<int64_t> offsets;
-    PointerMapBin(uint64_t returnAddress_, uint64_t nextPointerMapAddress_,
-                  uint64_t frameSize_, uint64_t isMain_,
-                  std::vector<int64_t> offsets_)
-        : returnAddress(returnAddress_),
-          nextPointerMapAddress(nextPointerMapAddress_),
-          frameSize(frameSize_),
-          isMain(isMain_),
-          offsets(offsets_) {}
+    uint64_t return_address_;
+    uint64_t next_pointerMap_;
+    uint64_t is_main_;
+    uint64_t frame_size_;
+    std::vector<int64_t> offsets_;
   };
 
-  /***************** end necessary protocols ********************/
+  static inline bool CompareIntervalBySize(FreeIntervalInfo interval_A,
+                                           FreeIntervalInfo interval_B) {
+    return interval_A.interval_size < interval_B.interval_size;
+  }
+
+  static inline bool CompareIntervalByStartAddr(FreeIntervalInfo interval_A,
+                                                FreeIntervalInfo interval_B) {
+    return (uint64_t)interval_A.interval_start <
+           (uint64_t)interval_B.interval_start;
+  }
 
   inline void SortIntervalBySize();
 
   inline void SortIntervalByStartAddr();
-
-  void Coalesce();
-
-  freeIntervalInfo FindFit(int size);
 
   char *AllocateRecord(uint64_t size, int des_size, unsigned char *des_ptr,
                        uint64_t *sp);
 
   char *AllocateArray(uint64_t size, uint64_t *sp);
 
-  void Sweep(markResult bitMaps);
-
-  markResult Mark();
-
-  inline void ScanARecord(recordInfo record,
-                          std::vector<int> &arraiesActiveBitMap,
-                          std::vector<int> &recordsActiveBitMap);
-
-  void MarkAnAddress(uint64_t address, std::vector<int> &arraiesActiveBitMap,
-                     std::vector<int> &recordsActiveBitMap);
-
-
-  static constexpr uint64_t WORD_SIZE = 8;
-
   void GetAllPointerMaps();
 
-  std::vector<uint64_t> addressToMark();
+  FreeIntervalInfo FindFit(int size);
 
- private:
+  MarkResult Mark();
 
+  std::vector<uint64_t> AddressToMark();
+
+  void MarkAnAddress(uint64_t address, std::vector<int> &arraies_active_bitmap,
+                     std::vector<int> &records_active_bitmap);
+
+  inline void ScanARecord(RecordInfo record,
+                          std::vector<int> &arraies_active_bitmap,
+                          std::vector<int> &records_active_bitmap);
+
+  void Sweep(MarkResult bitmaps);
+
+  void Coalesce();
+
+private:
   char *heap_root;
-  std::vector<recordInfo> recordsInHeap;
-  std::vector<arrayInfo> arraiesInHeap;
-  std::vector<freeIntervalInfo> free_intervals;
-  std::vector<PointerMapBin> pointerMaps;
-  uint64_t *tigerStack;
-
-  void printPointerMap();
-
+  uint64_t *tiger_stack;
+  std::vector<RecordInfo> records_in_heap;
+  std::vector<ArrayInfo> arraies_in_heap;
+  std::vector<FreeIntervalInfo> free_intervals;
+  std::vector<PointerMapBin> pointer_maps;
 };
-
 } // namespace gc
-
